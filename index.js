@@ -72,28 +72,75 @@ async function run() {
     res.send(result);
 });
 
-app.get('/cart/search/:userEmail', async (req, res) => {
-  const userEmail = req.params.userEmail; // Get the userEmail from the URL
+app.post('/cart/delete', async (req, res) => {
+  const { userEmail, productId } = req.body;
+  console.log('Received request with userEmail:', userEmail, 'and productId:', productId);
 
   try {
-    const userCart = await productcart.findOne({ userEmail }); // Assuming your data structure allows finding a user by email
-    if (!userCart) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const existingCart = await productcart.findOne({ userEmail: userEmail });
+    console.log('Existing Cart:', existingCart);
 
-    res.json(userCart.cart); // Send the user's cart as a response
+    if (existingCart) {
+      const productIndex = existingCart.cart.findIndex(
+        (product) => product.productId === productId
+      );
+      console.log('Product Index:', productIndex);
+
+      if (productIndex !== -1) {
+        existingCart.cart.splice(productIndex, 1);
+
+        const result = await productcart.updateOne(
+          { userEmail: userEmail },
+          { $set: { cart: existingCart.cart } }
+        );
+        console.log('Update Result:', result);
+
+        if (result.modifiedCount > 0) {
+  
+          console.log('Product successfully removed from the cart');
+          return res.json({ success: true });
+        } else {
+          console.log('Failed to remove product from cart');
+          return res.json({ success: false, message: 'Failed to remove product from cart' });
+        }
+      } else {
+        console.log('Product not found in cart');
+        return res.json({ success: false, message: 'Product not found in cart' });
+      }
+    } else {
+      console.log("User's cart not found");
+      return res.json({ success: false, message: "User's cart not found" });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Server error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-app.delete('/cart/:id', async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) }
-  const result = await productcart.deleteOne(query);
-  res.send(result);
-})
+
+
+// app.get('/cart/search/:userEmail', async (req, res) => {
+//   const userEmail = req.params.userEmail;
+
+//   try {
+//     const userCart = await productcart.findOne({ userEmail }); 
+//     if (!userCart) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     res.json(userCart.cart); 
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
+// app.delete('/cart/:id', async (req, res) => {
+//   const id = req.params.id;
+//   const query = { _id: new ObjectId(id) }
+//   const result = await productcart.deleteOne(query);
+//   res.send(result);
+// })
 
 
 //only Get Brands 
@@ -164,23 +211,31 @@ app.delete('/cart/:id', async (req, res) => {
     }
 });
 
-app.get('/product/id/:id', async (req, res) => {
+app.get('/products/id/:id', async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) }
   const result = await productCollection.findOne(query);
   res.send(result);
 })
 
-app.put('/product/id/:id', async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: new ObjectId(id) }
-  const options = { upsert: true };
-  const updatedproduct = req.body;
-  console.log(updatedproduct);
+app.put('/products/id/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }; 
+    const updatedProduct = req.body;
+    console.log(updatedProduct);
 
-  const result = await productCollection.updateOne(filter, updatedproduct, options);
-  res.send(result);
-})
+    const result = await productCollection.updateOne(filter, { $set: updatedProduct }); 
+    if (result.matchedCount === 0) {
+      res.status(404).json({ message: 'Product not found' });
+    } else {
+      res.json({ message: 'Product updated successfully' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
   // All post  method 
 
@@ -207,6 +262,7 @@ app.post('/product', async (req, res) => {
 });
 
 
+//User area
   app.get('/user', async (req, res) => {
     const cursor = userCollection.find();
     const users = await cursor.toArray();
