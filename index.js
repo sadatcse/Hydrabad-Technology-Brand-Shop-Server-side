@@ -1,47 +1,37 @@
-//Header area
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const express =require('express');
+const express = require('express');
 const cors = require('cors');
-const app= express();
-const port =process.env.PORT ||5000;
-require('dotenv').config()
-const uri = `mongodb+srv://${process.env.M_U}:${process.env.SECRET_KEY}@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
+require('dotenv').config();
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const app = express();
+const port = process.env.PORT || 5000;
 
-
-// middleware 
+// middleware
 app.use(cors());
 app.use(express.json());
 
+const uri = `mongodb+srv://${process.env.M_U}:${process.env.SECRET_KEY}@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
+console.log(uri);
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
-async function run() {
-  if (client && client.topology && client.topology.s.state === 2) {
-    console.log("Already connected to MongoDB!");
-  } else {
-    // Connect the client to the server if not already connected
-    await client.connect();
-    console.log("Connected to MongoDB!");
-  }
 
-  // Import mongo Db Base 
+async function run() {
+    try {
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
 
   const userCollection = client.db('Techno').collection('user');
   const productCollection = client.db('Techno').collection('protech');
   const productcart = client.db('Techno').collection('carts');
   const brandcollection = client.db('Techno').collection('brandstec');
-
-
-//------------------------------------------------Add to Cart all  ------------------------------------------------
-
-
-  app.get('/cart', async (req, res) => {
+  
+app.get('/cart', async (req, res) => {
     const cursor = productcart.find();
     const brands = await cursor.toArray();
     res.send(brands);
@@ -119,33 +109,6 @@ app.post('/cart/delete', async (req, res) => {
 
 
 
-// app.get('/cart/search/:userEmail', async (req, res) => {
-//   const userEmail = req.params.userEmail;
-
-//   try {
-//     const userCart = await productcart.findOne({ userEmail }); 
-//     if (!userCart) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-
-//     res.json(userCart.cart); 
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
-
-// app.delete('/cart/:id', async (req, res) => {
-//   const id = req.params.id;
-//   const query = { _id: new ObjectId(id) }
-//   const result = await productcart.deleteOne(query);
-//   res.send(result);
-// })
-
-
-//only Get Brands 
-
-
   app.get('/brands', async (req, res) => {
     const cursor = brandcollection.find();
     const brands = await cursor.toArray();
@@ -159,9 +122,6 @@ app.post('/cart/delete', async (req, res) => {
       res.send(products);
   });
 
-// -------------------------------Product Related Data --------------------------------------------------
-
-  //get all Product  
 
   app.get('/product', async (req, res) => {
     const cursor = productCollection.find();
@@ -169,7 +129,6 @@ app.post('/cart/delete', async (req, res) => {
     res.send(products);
   });
 
-  //get Product by category
 
   app.get('/product/category/:category', async (req, res) => {
     const requestedCategory = req.params.category;
@@ -178,9 +137,6 @@ app.post('/cart/delete', async (req, res) => {
       res.send(products);
   });
 
-    //get Product by Brand
-
-
   app.get('/product/brand/:brand', async (req, res) => {
     const requestedBrand = req.params.brand;
       const cursor = productCollection.find({ Brand: requestedBrand });
@@ -188,7 +144,6 @@ app.post('/cart/delete', async (req, res) => {
       res.send(products);
   });
 
- // get product by brand and catagorie [http://localhost:5000/product/search/apple/Mobile]
 
   app.get('/product/search/:brand/:category', async (req, res) => {
     const requestedBrand = req.params.brand;
@@ -237,11 +192,6 @@ app.put('/products/id/:id', async (req, res) => {
   }
 });
 
-  // All post  method 
-
-
-
-
 
 app.put('/updatep/:id', async (req, res) => {
   const id = req.params.id;
@@ -262,7 +212,6 @@ app.post('/product', async (req, res) => {
 });
 
 
-//User area
   app.get('/user', async (req, res) => {
     const cursor = userCollection.find();
     const users = await cursor.toArray();
@@ -277,15 +226,24 @@ app.post('/product', async (req, res) => {
     res.send(result);
 });
 
-  app.get('/', (req, res) => {
-    res.send('Blank Page');
-  });
-}
+        
 
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    } finally {
+        // Ensures that the client will close when you finish/error
+        // await client.close();
+    }
+}
 run().catch(console.dir);
 
+
+
+app.get('/', (req, res) => {
+    res.send('Welcome to our server')
+})
+
 app.listen(port, () => {
-  console.log(`Server is running on Port:${port}`);
-});
-
-
+    console.log(`Server is running on port: ${port}`)
+})
