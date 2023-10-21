@@ -30,19 +30,58 @@ async function run() {
     console.log("Connected to MongoDB!");
   }
 
+  // Import mongo Db Base 
+
   const userCollection = client.db('Techno').collection('user');
   const productCollection = client.db('Techno').collection('protech');
   const productcart = client.db('Techno').collection('carts');
   const brandcollection = client.db('Techno').collection('brandstec');
 
 
-  // All get method 
+//------------------------------------------------Add to Cart all  ------------------------------------------------
+
 
   app.get('/cart', async (req, res) => {
     const cursor = productcart.find();
     const brands = await cursor.toArray();
     res.send(brands);
   });
+
+  app.post('/cart', async (req, res) => {
+    const products = req.body;
+    const userEmail = products.userEmail;
+    const cartProduct = products.cart[0]; 
+    let result; 
+    const existingCart = await productcart.findOne({ userEmail: userEmail }); 
+    if (existingCart) {
+        const existingProduct = existingCart.cart.find(product => product.productId === cartProduct.productId);
+        if (existingProduct) {
+            existingProduct.quantity++;
+        } else {
+            existingCart.cart.push(cartProduct);
+        }
+        result = await productcart.updateOne({ userEmail: userEmail }, { $set: { cart: existingCart.cart } }); 
+    } else {
+        const newCart = {
+            userEmail: userEmail, 
+            cart: [cartProduct]
+        };
+        result = await productcart.insertOne(newCart);
+    }
+
+    res.send(result);
+});
+
+app.delete('/cart/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) }
+  const result = await productcart.deleteOne(query);
+  res.send(result);
+})
+
+
+//only Get Brands 
+
 
   app.get('/brands', async (req, res) => {
     const cursor = brandcollection.find();
@@ -57,11 +96,17 @@ async function run() {
       res.send(products);
   });
 
+// -------------------------------Product Related Data --------------------------------------------------
+
+  //get all Product  
+
   app.get('/product', async (req, res) => {
     const cursor = productCollection.find();
     const products = await cursor.toArray();
     res.send(products);
   });
+
+  //get Product by category
 
   app.get('/product/category/:category', async (req, res) => {
     const requestedCategory = req.params.category;
@@ -70,6 +115,9 @@ async function run() {
       res.send(products);
   });
 
+    //get Product by Brand
+
+
   app.get('/product/brand/:brand', async (req, res) => {
     const requestedBrand = req.params.brand;
       const cursor = productCollection.find({ Brand: requestedBrand });
@@ -77,20 +125,16 @@ async function run() {
       res.send(products);
   });
 
-  app.get('/brands/:brand', async (req, res) => {
-    const requestedBrand = req.params.brand;
-      const cursor = brandcollection.find({ BrandName: requestedBrand });
-      const products = await cursor.toArray();
-      res.send(products);
-  });
+ // get product by brand and catagorie [http://localhost:5000/product/search/apple/Mobile]
 
-  app.get('/product/:brand/:category', async (req, res) => {
+  app.get('/product/search/:brand/:category', async (req, res) => {
     const requestedBrand = req.params.brand;
     const requestedCategory = req.params.category;
     const cursor = productCollection.find({ Brand: requestedBrand, category: requestedCategory });
       const products = await cursor.toArray();
       res.send(products);
   });
+
 
   app.get('/product/:product_id', async (req, res) => {
     const requestedProductID = req.params.product_id;
@@ -124,30 +168,7 @@ app.put('/product/id/:id', async (req, res) => {
 
   // All post  method 
 
-  app.post('/cart', async (req, res) => {
-    const products = req.body;
-    const userUid = products.userUid;
-    const cartProduct = products.cart[0]; 
-    let result; 
-    const existingCart = await productcart.findOne({ userUid: userUid });
-    if (existingCart) {
-        const existingProduct = existingCart.cart.find(product => product.productId === cartProduct.productId);
-        if (existingProduct) {
-            existingProduct.quantity++;
-        } else {
-            existingCart.cart.push(cartProduct);
-        }
-        result = await productcart.updateOne({ userUid: userUid }, { $set: { cart: existingCart.cart } });
-    } else {
-        const newCart = {
-            userUid: userUid,
-            cart: [cartProduct]
-        };
-        result = await productcart.insertOne(newCart);
-    }
 
-    res.send(result);
-});
 
 
 
