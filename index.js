@@ -72,6 +72,22 @@ async function run() {
     res.send(result);
 });
 
+app.get('/cart/search/:userEmail', async (req, res) => {
+  const userEmail = req.params.userEmail; // Get the userEmail from the URL
+
+  try {
+    const userCart = await productcart.findOne({ userEmail }); // Assuming your data structure allows finding a user by email
+    if (!userCart) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(userCart.cart); // Send the user's cart as a response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.delete('/cart/:id', async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) }
