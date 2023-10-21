@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.M_U}:${process.env.SECRET_KEY}@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://Hydrabadphero:MXZyo8xCHPQ874g3@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
 console.log(uri);
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
