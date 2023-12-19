@@ -9,7 +9,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const uri = `mongodb+srv://Hydrabadphero:MXZyo8xCHPQ874g3@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.pivlv54.mongodb.net/?retryWrites=true&w=majority`;
 console.log(uri);
 
 
@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+    
 
   const userCollection = client.db('Techno').collection('user');
   const productCollection = client.db('Techno').collection('protech');
